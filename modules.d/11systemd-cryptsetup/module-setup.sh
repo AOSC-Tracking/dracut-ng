@@ -31,7 +31,13 @@ depends() {
             deps+=" tpm2-tss"
         fi
     elif [[ ! ${hostonly-} ]]; then
-        for module in fido2 pkcs11 tpm2-tss; do
+        if [[ ${DRACUT_ARCH:-$(uname -m)} != mips64 ]]; then
+            modules=(fido pkcs11 tpm2-tss)
+        else
+            # MIPS64: No chance for TPM2 on these platforms.
+            modules=()
+        fi
+        for module in ${modules[@]}; do
             module_check $module > /dev/null 2>&1
             if [[ $? == 255 ]] && ! [[ " $omit_dracutmodules " == *\ $module\ * ]]; then
                 deps+=" $module"
