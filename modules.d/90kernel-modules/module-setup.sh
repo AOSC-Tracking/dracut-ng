@@ -25,12 +25,22 @@ installkernel() {
     }
 
     install_block_modules() {
-        instmods \
-            scsi_dh_rdac scsi_dh_emc scsi_dh_alua \
-            =drivers/usb/storage \
-            =ide nvme vmd \
-            virtio_blk virtio_scsi \
-            =drivers/ufs
+        if [[ ${DRACUT_ARCH:-$(uname -m)} != mips64 ]]; then
+            instmods \
+                scsi_dh_rdac scsi_dh_emc scsi_dh_alua \
+                =drivers/usb/storage \
+                =ide nvme vmd \
+                virtio_blk virtio_scsi \
+                =drivers/ufs
+        else
+            # MIPS64: Minimise kernel modules to save initramfs size,
+            # taking into account USB mass storage, IDE/ATA, NVMe, and
+            # virtualised storage (virtio).
+            instmods \
+                =drivers/usb/storage \
+                =ide nvme \
+                virtio_blk virtio_scsi
+        fi
 
         dracut_instmods -o -s "${_blockfuncs}" "=drivers"
     }
@@ -39,27 +49,46 @@ installkernel() {
         hostonly='' instmods \
             hid_generic unix
 
-        hostonly=$(optional_hostonly) instmods \
-            ehci-hcd ehci-pci ehci-platform \
-            ohci-hcd ohci-pci \
-            uhci-hcd \
-            usbhid \
-            xhci-hcd xhci-pci xhci-plat-hcd \
-            "=drivers/hid" \
-            "=drivers/tty/serial" \
-            "=drivers/input/serio" \
-            "=drivers/input/keyboard" \
-            "=drivers/pci/host" \
-            "=drivers/pci/controller" \
-            "=drivers/pinctrl" \
-            "=drivers/usb/typec" \
-            "=drivers/watchdog"
+        if [[ ${DRACUT_ARCH:-$(uname -m)} != mips64 ]]; then
+            hostonly=$(optional_hostonly) instmods \
+                ehci-hcd ehci-pci ehci-platform \
+                ohci-hcd ohci-pci \
+                uhci-hcd \
+                usbhid \
+                xhci-hcd xhci-pci xhci-plat-hcd \
+                "=drivers/hid" \
+                "=drivers/tty/serial" \
+                "=drivers/input/serio" \
+                "=drivers/input/keyboard" \
+                "=drivers/pci/host" \
+                "=drivers/pci/controller" \
+                "=drivers/pinctrl" \
+                "=drivers/usb/typec" \
+                "=drivers/watchdog"
+        else
+            # MIPS64: Minimise kernel modules to save initramfs size,
+            # taking into account generic USB HID drivers and USB hosts.
+            hostonly=$(optional_hostonly) instmods \
+                ehci-hcd ehci-pci ehci-platform \
+                ohci-hcd ohci-pci \
+                uhci-hcd \
+                usbhid \
+                xhci-hcd xhci-pci xhci-plat-hcd
+        fi
 
-        instmods \
-            yenta_socket intel_lpss_pci spi_pxa2xx_platform \
-            atkbd i8042 firewire-ohci hv-vmbus \
-            virtio virtio_ring virtio_pci pci_hyperv \
-            surface_aggregator_registry psmouse
+        if [[ ${DRACUT_ARCH:-$(uname -m)} != mips64 ]]; then
+            instmods \
+                yenta_socket intel_lpss_pci spi_pxa2xx_platform \
+                atkbd i8042 firewire-ohci hv-vmbus \
+                virtio virtio_ring virtio_pci pci_hyperv \
+                surface_aggregator_registry psmouse
+        else
+            # MIPS64: Minimise kernel modules to save initramfs size,
+            # taking into account AT keyboards, i8042, and virtio devices.
+            instmods \
+                atkbd i8042 \
+                virtio virtio_ring virtio_pci
+        fi
 
         if [[ ${DRACUT_ARCH:-$(uname -m)} == arm* || ${DRACUT_ARCH:-$(uname -m)} == aarch64 || ${DRACUT_ARCH:-$(uname -m)} == riscv* ]]; then
             # arm/aarch64 specific modules
