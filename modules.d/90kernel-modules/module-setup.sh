@@ -49,13 +49,19 @@ installkernel() {
         hostonly='' instmods \
             hid_generic unix
 
+        # Explicitly include xhci-pci-renesas module.
+        # Since Linux v6.12-rc1 (commit 25f51b76f90f), xhci-pci no longer
+        # depends on xhci-pci-renesas, causing the Renesas driver to be
+        # omitted during initramfs generation (when built as a module).
+        # This makes platforms with such xHCI controllers unavailable
+        # during initrd, and unable to boot from a USB drive.
         if [[ ${DRACUT_ARCH:-$(uname -m)} != mips64 ]]; then
             hostonly=$(optional_hostonly) instmods \
                 ehci-hcd ehci-pci ehci-platform \
                 ohci-hcd ohci-pci \
                 uhci-hcd \
                 usbhid \
-                xhci-hcd xhci-pci xhci-plat-hcd \
+                xhci-hcd xhci-pci xhci-pci-renesas xhci-plat-hcd \
                 "=drivers/hid" \
                 "=drivers/tty/serial" \
                 "=drivers/input/serio" \
@@ -73,7 +79,7 @@ installkernel() {
                 ohci-hcd ohci-pci \
                 uhci-hcd \
                 usbhid \
-                xhci-hcd xhci-pci xhci-plat-hcd
+                xhci-hcd xhci-pci xhci-pci-renesas xhci-plat-hcd
         fi
 
         if [[ ${DRACUT_ARCH:-$(uname -m)} != mips64 ]]; then
