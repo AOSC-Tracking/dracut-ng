@@ -6,6 +6,7 @@
 # Harald Hoyer <harald@redhat.com>
 # Jeremy Katz <katzj@redhat.com>
 
+export MODPROBE_OPTIONS=-v
 export -p > /tmp/export.orig
 
 NEWROOT="/sysroot"
